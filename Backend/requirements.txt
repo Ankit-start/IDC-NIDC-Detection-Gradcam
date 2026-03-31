@@ -1,6 +1,9 @@
 flask
+flask-cors
+gunicorn
 torch
 torchvision
+numpy
 pillow
-gdown
 matplotlib
+gdown
