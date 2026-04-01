@@ -52,7 +52,6 @@ def load_model():
     model = resnet50(weights=None)
     model.fc = nn.Linear(model.fc.in_features, 2)  # IDC vs NIDC
 
-    # Safe load with weights_only=False
     checkpoint = torch.load(MODEL_PATH, map_location="cpu", weights_only=False)
     if "model_state_dict" in checkpoint:
         model.load_state_dict(checkpoint["model_state_dict"])
@@ -97,8 +96,8 @@ if uploaded_file is not None:
 
     with col2:
         fig, ax = plt.subplots()
-        ax.imshow(img.resize((224,224)))
-        ax.imshow(cam_mask, cmap='jet', alpha=0.4)
+        ax.imshow(img.resize((224,224)))              # original image
+        ax.imshow(cam_mask, cmap='jet', alpha=0.4)    # heatmap overlay
         ax.axis('off')
         ax.set_title("Grad-CAM Overlay")
         st.pyplot(fig)
