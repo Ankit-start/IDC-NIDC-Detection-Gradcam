@@ -99,7 +99,9 @@ if uploaded_file is not None:
     with col2:
         fig, ax = plt.subplots()
         ax.imshow(img.resize((224,224)))              # original image
-        ax.imshow(cam_mask, cmap='jet', alpha=0.5)    # smooth heatmap overlay
+        ax.imshow(cam_mask, cmap='jet', alpha=0.5)    # heatmap overlay
         ax.axis('off')
         ax.set_title("Grad-CAM Overlay")
         st.pyplot(fig)
+        plt.close(fig)   # free memory after display
+
