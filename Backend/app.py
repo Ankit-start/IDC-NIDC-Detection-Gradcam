@@ -3,8 +3,8 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 from PIL import Image
+import matplotlib.pyplot as plt
 import numpy as np
-import cv2
 import os
 from torchvision.models import resnet50
 
@@ -70,15 +70,6 @@ preprocess = transforms.Compose([
 ])
 
 # -----------------------------
-# Overlay function (OpenCV blending)
-# -----------------------------
-def overlay_cam_on_image(img, cam_mask, alpha=0.4):
-    img = np.array(img.resize((224,224)))
-    heatmap = cv2.applyColorMap(cam_mask, cv2.COLORMAP_JET)
-    overlay = cv2.addWeighted(img, 1-alpha, heatmap, alpha, 0)
-    return overlay
-
-# -----------------------------
 # Streamlit UI
 # -----------------------------
 st.title("IDC vs NIDC Detection with Grad-CAM (ResNet50)")
@@ -97,7 +88,6 @@ if uploaded_file is not None:
 
     # Grad-CAM
     cam_mask = gradcam(input_tensor)
-    overlay = overlay_cam_on_image(img, cam_mask)
 
     # Display results side by side
     col1, col2 = st.columns(2)
@@ -106,4 +96,9 @@ if uploaded_file is not None:
         st.image(img, caption=f"Prediction: {label} (Prob: {prob[pred_class]:.2f})")
 
     with col2:
-        st.image(overlay, caption="Grad-CAM Overlay", use_column_width=True)
+        fig, ax = plt.subplots()
+        ax.imshow(img.resize((224,224)))
+        ax.imshow(cam_mask, cmap='jet', alpha=0.4)
+        ax.axis('off')
+        ax.set_title("Grad-CAM Overlay")
+        st.pyplot(fig)
