@@ -4,6 +4,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from PIL import Image
 import numpy as np
+import cv2
 import os
 from torchvision.models import resnet50
 
@@ -40,17 +41,14 @@ class GradCAM:
         cam = np.maximum(cam, 0)
         cam = (cam - cam.min()) / (cam.max() + 1e-8)
         cam = np.uint8(cam * 255)
-        return Image.fromarray(cam).resize((224, 224), resample=Image.BILINEAR)
+        return cam
 
 # -----------------------------
 # Lazy model loader
 # -----------------------------
 @st.cache_resource
 def load_model():
-    # Explicitly reference the Backend folder
-    MODEL_PATH = os.path.join("Backend", "best_resnet50.pth")
-
-    # Define ResNet50 model
+    MODEL_PATH = os.path.join("Backend", "best_resnet50.pth")  # adjust path if needed
     model = resnet50(weights=None)
     model.fc = nn.Linear(model.fc.in_features, 2)  # IDC vs NIDC
 
@@ -61,12 +59,8 @@ def load_model():
     else:
         model.load_state_dict(checkpoint)
     model.eval()
-
-    # Grad-CAM setup
     gradcam = GradCAM(model, model.layer4)
     return model, gradcam
-
-
 
 # Preprocessing
 preprocess = transforms.Compose([
@@ -74,6 +68,15 @@ preprocess = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])
 ])
+
+# -----------------------------
+# Overlay function (OpenCV blending)
+# -----------------------------
+def overlay_cam_on_image(img, cam_mask, alpha=0.4):
+    img = np.array(img.resize((224,224)))
+    heatmap = cv2.applyColorMap(cam_mask, cv2.COLORMAP_JET)
+    overlay = cv2.addWeighted(img, 1-alpha, heatmap, alpha, 0)
+    return overlay
 
 # -----------------------------
 # Streamlit UI
@@ -94,7 +97,13 @@ if uploaded_file is not None:
 
     # Grad-CAM
     cam_mask = gradcam(input_tensor)
+    overlay = overlay_cam_on_image(img, cam_mask)
 
-    # Display results
-    st.image(img, caption=f"Prediction: {label} (Prob: {prob[pred_class]:.2f})")
-    st.image(cam_mask, caption="Grad-CAM Overlay", use_column_width=True)
+    # Display results side by side
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.image(img, caption=f"Prediction: {label} (Prob: {prob[pred_class]:.2f})")
+
+    with col2:
+        st.image(overlay, caption="Grad-CAM Overlay", use_column_width=True)
