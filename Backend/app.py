@@ -47,7 +47,10 @@ class GradCAM:
 # -----------------------------
 @st.cache_resource
 def load_model():
-    MODEL_PATH = "best_resnet50.pth"  # use your uploaded file
+    # Explicitly reference the Backend folder
+    MODEL_PATH = os.path.join("Backend", "best_resnet50.pth")
+
+    # Define ResNet50 model
     model = resnet50(weights=None)
     model.fc = nn.Linear(model.fc.in_features, 2)  # IDC vs NIDC
 
@@ -58,8 +61,12 @@ def load_model():
     else:
         model.load_state_dict(checkpoint)
     model.eval()
+
+    # Grad-CAM setup
     gradcam = GradCAM(model, model.layer4)
     return model, gradcam
+
+
 
 # Preprocessing
 preprocess = transforms.Compose([
