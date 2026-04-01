@@ -1,9 +1,5 @@
-flask
-flask-cors
-gunicorn
+streamlit
 torch
 torchvision
-numpy
 pillow
-matplotlib
-gdown
+numpy
