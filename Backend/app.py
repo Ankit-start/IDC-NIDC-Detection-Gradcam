@@ -40,17 +40,19 @@ class GradCAM:
         cam = (weights[:, None, None] * activations).sum(dim=0).cpu().numpy()
         cam = np.maximum(cam, 0)
         cam = (cam - cam.min()) / (cam.max() + 1e-8)
-        cam = np.uint8(cam * 255)
-        return cam
+
+        # Upsample CAM smoothly to match image size
+        cam_resized = Image.fromarray(np.uint8(cam * 255)).resize((224,224), Image.BILINEAR)
+        return np.array(cam_resized)
 
 # -----------------------------
 # Lazy model loader
 # -----------------------------
 @st.cache_resource
 def load_model():
-    MODEL_PATH = os.path.join("Backend", "best_resnet50.pth")  # adjust path if needed
+    MODEL_PATH = os.path.join("Backend", "best_resnet50.pth")
     model = resnet50(weights=None)
-    model.fc = nn.Linear(model.fc.in_features, 2)  # IDC vs NIDC
+    model.fc = nn.Linear(model.fc.in_features, 2)
 
     checkpoint = torch.load(MODEL_PATH, map_location="cpu", weights_only=False)
     if "model_state_dict" in checkpoint:
@@ -97,7 +99,7 @@ if uploaded_file is not None:
     with col2:
         fig, ax = plt.subplots()
         ax.imshow(img.resize((224,224)))              # original image
-        ax.imshow(cam_mask, cmap='jet', alpha=0.4)    # heatmap overlay
+        ax.imshow(cam_mask, cmap='jet', alpha=0.5)    # smooth heatmap overlay
         ax.axis('off')
         ax.set_title("Grad-CAM Overlay")
         st.pyplot(fig)
